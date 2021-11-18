@@ -1,0 +1,147 @@
+* Pixel sensor
+**********************************************************************
+**        Copyright (c) 2021 Carsten Wulff Software, Norway
+** *******************************************************************
+** Created       : wulff at 2021-7-22
+** *******************************************************************
+**  The MIT License (MIT)
+**
+**  Permission is hereby granted, free of charge, to any person obtaining a copy
+**  of this software and associated documentation files (the "Software"), to deal
+**  in the Software without restriction, including without limitation the rights
+**  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+**  copies of the Software, and to permit persons to whom the Software is
+**  furnished to do so, subject to the following conditions:
+**
+**  The above copyright notice and this permission notice shall be included in all
+**  copies or substantial portions of the Software.
+**
+**  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+**  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+**  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+**  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+**  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+**  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+**  SOFTWARE.
+**
+**********************************************************************
+
+.SUBCKT PIXEL_SENSOR VBN1 VRAMP VRESET ERASE EXPOSE READ 
++ DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 VDD VSS
+
+
+XS1 VRESET VSTORE ERASE EXPOSE VDD VSS SENSOR
+
+XC1 VCMP_OUT VSTORE VRAMP VDD VSS VBN1 COMP 
+
+XM1 READ VCMP_OUT DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 VDD VSS MEMORY
+
+.ENDS
+
+**********************************************************************
+* MEMORY
+**********************************************************************
+
+.SUBCKT MEMORY READ VCMP_OUT
++ DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 VDD VSS
+
+XM1 VCMP_OUT DATA_0 READ VSS MEMCELL
+XM2 VCMP_OUT DATA_1 READ VSS MEMCELL
+XM3 VCMP_OUT DATA_2 READ VSS MEMCELL
+XM4 VCMP_OUT DATA_3 READ VSS MEMCELL
+XM5 VCMP_OUT DATA_4 READ VSS MEMCELL
+XM6 VCMP_OUT DATA_5 READ VSS MEMCELL
+XM7 VCMP_OUT DATA_6 READ VSS MEMCELL
+XM8 VCMP_OUT DATA_7 READ VSS MEMCELL
+
+.ENDS
+
+.SUBCKT MEMCELL CMP DATA READ VSS
+M1 VG CMP DATA VSS nmos  w=0.2u  l=0.13u
+M2 DATA READ DMEM VSS nmos  w=0.4u  l=0.13u
+M3 DMEM VG VSS VSS nmos  w=1u  l=0.13u
+C1 VG VSS 1p
+.ENDS
+
+.SUBCKT SENSOR VRESET VSTORE ERASE EXPOSE VDD VSS
+
+* Capacitor to model gate-source capacitance
+C1 VSTORE VSS 100f
+Rleak VSTORE VSS 100T
+
+* Switch to reset voltage on capacitor
+MTN1 VRESET ERASE VSTORE VSTORE nmos W=0.65u L=0.13u M=4
+
+*BR1 VRESET VSTORE I=V(ERASE)*V(VRESET,VSTORE)/1k
+
+* Switch to expose pixel
+MTN2 VPG EXPOSE VSTORE VSTORE nmos W=0.65u L=0.13u M=4
+
+*BR2 VPG VSTORE I=V(EXPOSE)*V(VSTORE,VPG)/1k
+
+* Model photocurrent
+Rphoto VPG VSS 1G
+.ENDS
+
+.SUBCKT COMP VCMP_OUT VSTORE VRAMP VDD VSS VBN1
+
+* Model comparator
+* BC1 VCMP_OUT VSS V = ((atan(100000*(V(VSTORE) - V(VRAMP)))) + 1.58)/3.14*1.5
+
+.param Wn = 0.65u
+.param Wp = Wn*2.55 
+.param Lnp = 0.13u
+
+MTN3 V2 VSTORE V3 V3 nmos W=Wn L=Lnp
+MTP1 V2 V2 VDD VDD pmos W=Wp L=Lnp
+MTN4 V3 VBN1 VSS VSS nmos W=Wn L=Lnp
+MTP2 V4 V2 VDD VDD pmos W=Wp L=Lnp
+MTN5 V4 VRAMP V3 V3 nmos W=Wn L=Lnp
+MTP3 V5 V4 VDD VDD pmos W=Wp L=Lnp
+MTN6 V5 VBN1 VSS VSS nmos W=Wn L=Lnp
+MTP4 VCMP_OUT V5 VDD VDD pmos W=Wp L=Lnp
+MTN7 VCMP_OUT V5 VSS VSS nmos W=Wn L=Lnp
+
+.ENDS
+
+* Sensor
+* MMN1 RESET PRESET V1 V1 nmos W=0.65u L=0.13u
+* MMN2 PG TX V1 V1 nmos W=0.65u L=0.13u
+* C1 V1 VSS 1p?
+* R1 PG VSS ? 
+
+* Memory Fjerne denne?
+* .SUBCKT MEMORY 
+* XMN8a V7a V6 DATA_0 DATA_0 NCHIOA(NCHCM2)
+* XMN9a DATA_0 READ V8a V8a NCHIOA(NCHCM2)
+* XMN10a V8a V7a VSS VSS NCHIOA(NCHCM2)
+
+* XMN8b V7b V6 DATA_1 DATA_1 NCHIOA(NCHCM2)
+* XMN9b DATA_1 READ V8b V8b NCHIOA(NCHCM2)
+* XMN10b V8b V7b VSS VSS NCHIOA(NCHCM2)
+
+* XMN8c V7c V6 DATA_2 DATA_2 NCHIOA(NCHCM2)
+* XMN9c DATA_2 READ V8c V8c NCHIOA(NCHCM2)
+* XMN10c V8c V7c VSS VSS NCHIOA(NCHCM2)
+
+* XMN8d V7d V6 DATA_3 DATA_3 NCHIOA(NCHCM2)
+* XMN9d DATA_3 READ V8d V8d NCHIOA(NCHCM2)
+* XMN10d V8d V7d VSS VSS NCHIOA(NCHCM2)
+
+* XMN8e V7e V6 DATA_4 DATA_4 NCHIOA(NCHCM2)
+* XMN9e DATA_4 READ V8e V8e NCHIOA(NCHCM2)
+* XMN10e V8e V7e VSS VSS NCHIOA(NCHCM2)
+
+* XMN8f V7f V6 DATA_5 DATA_5 NCHIOA(NCHCM2)
+* XMN9f DATA_5 READ V8f V8f NCHIOA(NCHCM2)
+* XMN10f V8f V7f VSS VSS NCHIOA(NCHCM2)
+
+* XMN8g V7g V6 DATA_6 DATA_6 NCHIOA(NCHCM2)
+* XMN9g DATA_6 READ V8g V8g NCHIOA(NCHCM2)
+* XMN10g V8g V7g VSS VSS NCHIOA(NCHCM2)
+
+* XMN8h V7h V6 DATA_7 DATA_7 NCHIOA(NCHCM2)
+* XMN9h DATA_7 READ V8h V8h NCHIOA(NCHCM2)
+* XMN10h V8h V7h VSS VSS NCHIOA(NCHCM2)
+
+* .ENDS
